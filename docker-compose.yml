@@ -59,7 +59,7 @@ services:
             - ./docker/mysql/mysql.conf:/etc/mysql/conf.d/myconf.conf
             - ./mysql_data:/var/lib/mysql
             - ./docker/mysql/init:/docker-entrypoint-initdb.d
-        command: --default-authentication-plugin=mysql_native_password
+        command: --default-authentication-plugin=caching_sha2_password
         environment:
             MYSQL_USER: ${DB_USERNAME}
             MYSQL_PASSWORD: ${DB_PASSWORD}

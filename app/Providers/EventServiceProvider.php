@@ -2,10 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Restaurant;
+use App\Observers\RestaurantObserver;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Event;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -20,14 +21,21 @@ class EventServiceProvider extends ServiceProvider
         ],
     ];
 
+//    /**
+//     * @var array[]
+//     */
+//    protected $observers = [
+//        Restaurant::class => [RestaurantObserver::class],
+//    ];
+
     /**
      * Register any events for your application.
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
-        //
+        Restaurant::observe(RestaurantObserver::class);
     }
 
     /**

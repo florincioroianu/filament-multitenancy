@@ -2,6 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Tenancy\EditRestaurantProfile;
+use App\Filament\Pages\Tenancy\RegisterRestaurant;
+use App\Models\Restaurant;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -27,6 +30,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->tenant(
+                model: Restaurant::class,
+                ownershipRelationship: 'restaurant'
+            )
+            ->tenantRegistration(RegisterRestaurant::class)
+            ->tenantProfile(EditRestaurantProfile::class)
             ->colors([
                 'primary' => Color::Amber,
             ])
