@@ -1,0 +1,90 @@
+version: '3.9'
+services:
+    multi-tenancy-nginx:
+        container_name: multi-tenancy-nginx
+        restart: always
+        build:
+            context: ./
+            dockerfile: docker/nginx/Dockerfile
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/${VHOST_FILE}:/etc/nginx/conf.d/custom.conf
+        ports:
+            - "80"
+        links:
+            - multi-tenancy-php
+        environment:
+            VIRTUAL_HOST: ${DOMAIN_HOSTS}
+            VIRTUAL_PORT: 80
+            LETSENCRYPT_HOST: ${DOMAIN_HOSTS}
+            LETSENCRYPT_EMAIL: ${DOMAIN_EMAIL}
+        networks:
+            - nginx-proxy
+            - multi-tenancy
+
+    multi-tenancy-php:
+        user: ${USER_ID}:${GROUP_ID}
+        container_name: multi-tenancy-php
+        restart: always
+        build:
+            context: ./
+            dockerfile: docker/php/Dockerfile
+            args:
+                USER_ID: ${USER_ID}
+                GROUP_ID: ${GROUP_ID}
+        volumes:
+            - ./:/var/www
+            - ./docker/php/php.ini:/usr/local/etc/php/conf.d/php.ini
+            - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+            - ./docker/php/supervisord.conf:/etc/supervisor/conf.d/supervisord.conf
+        tmpfs:
+            - /dev/shm
+        links:
+            - multi-tenancy-mysql
+            - multi-tenancy-redis
+        ports:
+            - ${XDEBUG_EXTERNAL_PORT}:9003
+            - ${VITE_PORT}
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        networks:
+            - nginx-proxy
+            - multi-tenancy
+
+    multi-tenancy-mysql:
+        container_name: multi-tenancy-mysql
+        restart: always
+        image: mysql:8.0.34
+        volumes:
+            - ./docker/mysql/mysql.conf:/etc/mysql/conf.d/myconf.conf
+            - ./mysql_data:/var/lib/mysql
+            - ./docker/mysql/init:/docker-entrypoint-initdb.d
+        command: --default-authentication-plugin=mysql_native_password
+        environment:
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+        ports:
+            - ${DB_EXTERNAL_PORT}:3306
+        networks:
+            - multi-tenancy
+
+    multi-tenancy-redis:
+        container_name: multi-tenancy-redis
+        restart: always
+        build:
+            args:
+                REDIS_PASSWORD: ${REDIS_PASSWORD}
+            context: ./
+            dockerfile: docker/redis/Dockerfile
+        ports:
+            - ${REDIS_EXTERNAL_PORT}:6379
+        sysctls:
+            - net.core.somaxconn=511
+        networks:
+            - multi-tenancy
+
+networks:
+    multi-tenancy:
+    nginx-proxy:
+        external: true
